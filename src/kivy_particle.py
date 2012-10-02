@@ -6,6 +6,7 @@ from kivy.graphics import Color
 from kivy.uix.widget import Widget
 from kivy.clock import Clock
 from kivy.graphics import Rectangle
+from kivy.graphics.opengl import glBlendFunc, GL_SRC_ALPHA, GL_ONE, GL_ZERO, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_ONE_MINUS_SRC_ALPHA, GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR
 
 import random
 import sys
@@ -14,6 +15,18 @@ import math
 
 EMITTER_TYPE_GRAVITY = 0
 EMITTER_TYPE_RADIAL = 1
+
+BLEND_FUNC = {0: GL_ZERO,
+            1: GL_ONE,
+            0x300: GL_SRC_COLOR,
+            0x301: GL_ONE_MINUS_SRC_COLOR,
+            0x302: GL_SRC_ALPHA,
+            0x303: GL_ONE_MINUS_SRC_ALPHA,
+            0x304: GL_DST_ALPHA,
+            0x305: GL_ONE_MINUS_DST_ALPHA,
+            0x306: GL_DST_COLOR,
+            0x307: GL_ONE_MINUS_DST_COLOR
+}
 
 
 def random_color():
@@ -155,6 +168,8 @@ class PDParticleSystem(ParticleSystem):
         super(PDParticleSystem, self).__init__(texture, emission_rate, self.max_num_particles, self.max_num_particles, self.blend_factor_source, self.blend_factor_dest)
         self.premultiplied_alpha = False
 
+        glBlendFunc(self.blend_factor_source, self.blend_factor_dest)
+
     def _parse_config(self, config):
         self._config = config
         self.emitter_x_variance = float(self._parse_data('sourcePositionVariance', 'x'))
@@ -201,8 +216,7 @@ class PDParticleSystem(ParticleSystem):
 
     def _parse_blend(self, name):
         value = int(self._parse_data(name))
-        #TODO: A implementer
-        return value
+        return BLEND_FUNC[value]
 
     def _create_particle(self):
         return PDParticle()
