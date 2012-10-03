@@ -23,7 +23,7 @@ class PaintWidget(Widget):
         self.sun = PDParticleSystem(parse_xml('media/sun.pex'), texture)
         self.drugs = PDParticleSystem(parse_xml('media/drugs.pex'), texture)
         self.jellyfish = PDParticleSystem(parse_xml('media/jellyfish.pex'), texture)
-        self.fire = PDParticleSystem(parse_xml('media/fire.pex'), texture)
+        self.fire = PDParticleSystem(parse_xml('media/particle.pex'), texture)
 
         self.current = None
         self._show(self.sun)
@@ -51,7 +51,7 @@ class PaintWidget(Widget):
     def _show(self, system):
         if self.current:
             self.remove_widget(self.current)
-            self.current.stop()
+            self.current.stop(True)
         self.current = system
 
         self.current.emitter_x = 300

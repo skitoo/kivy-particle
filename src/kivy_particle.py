@@ -2,10 +2,9 @@
 import kivy
 kivy.require('1.4.0')
 
-from kivy.graphics import Color
 from kivy.uix.widget import Widget
 from kivy.clock import Clock
-from kivy.graphics import Rectangle
+from kivy.graphics import Rectangle, Color, Callback
 from kivy.graphics.opengl import glBlendFunc, GL_SRC_ALPHA, GL_ONE, GL_ZERO, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_ONE_MINUS_SRC_ALPHA, GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR
 
 import random
@@ -59,6 +58,10 @@ class ParticleSystem(Widget):
 
         self._raise_capacity(self.initial_capacity)
 
+        #self.canvas = RenderContext()
+        #with self.canvas:
+        #    self.fbo = Fbo(size=self.size)
+
         Clock.schedule_interval(self._update, 1.0 / 60.0)
 
     def _update(self, dt):
@@ -96,6 +99,8 @@ class ParticleSystem(Widget):
         self.emission_time = 0.0
         if clear:
             self.num_particles = 0
+            self.particles_dict = dict()
+            self.canvas.clear()
 
     def advance_time(self, passed_time):
         particle_index = 0
@@ -168,7 +173,16 @@ class PDParticleSystem(ParticleSystem):
         super(PDParticleSystem, self).__init__(texture, emission_rate, self.max_num_particles, self.max_num_particles, self.blend_factor_source, self.blend_factor_dest)
         self.premultiplied_alpha = False
 
+        with self.canvas.before:
+            Callback(self._set_blend_func)
+        with self.canvas.after:
+            Callback(self._reset_blend_func)
+
+    def _set_blend_func(self, instruction):
         glBlendFunc(self.blend_factor_source, self.blend_factor_dest)
+
+    def _reset_blend_func(self, instruction):
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
     def _parse_config(self, config):
         self._config = config
