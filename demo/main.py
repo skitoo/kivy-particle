@@ -8,22 +8,17 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.button import Button
 from kivy.uix.widget import Widget
-from kivy.core.image import Image
-from kivy_particle import PDParticleSystem
+from kivy_particle import ParticleSystem
 from kivy.config import Config
-
-from xml.dom.minidom import parse as parse_xml
 
 
 class PaintWidget(Widget):
     def __init__(self, **kwargs):
         super(PaintWidget, self).__init__(**kwargs)
-
-        texture = Image('media/particle.png').texture
-        self.sun = PDParticleSystem(parse_xml('media/sun.pex'), texture)
-        self.drugs = PDParticleSystem(parse_xml('media/drugs.pex'), texture)
-        self.jellyfish = PDParticleSystem(parse_xml('media/jellyfish.pex'), texture)
-        self.fire = PDParticleSystem(parse_xml('media/fire.pex'), texture)
+        self.sun = ParticleSystem('media/sun.pex')
+        self.drugs = ParticleSystem('media/drugs.pex')
+        self.jellyfish = ParticleSystem('media/jellyfish.pex')
+        self.fire = ParticleSystem('media/fire.pex')
 
         self.current = None
         self._show(self.sun)

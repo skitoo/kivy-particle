@@ -6,10 +6,13 @@ from kivy.uix.widget import Widget
 from kivy.clock import Clock
 from kivy.graphics import Rectangle, Color, Callback
 from kivy.graphics.opengl import glBlendFunc, GL_SRC_ALPHA, GL_ONE, GL_ZERO, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_ONE_MINUS_SRC_ALPHA, GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR
+from kivy.core.image import Image
 from kivy.logger import Logger
+from xml.dom.minidom import parse as parse_xml
 import random
 import sys
 import math
+import os
 
 
 EMITTER_TYPE_GRAVITY = 0
@@ -27,8 +30,6 @@ BLEND_FUNC = {0: GL_ZERO,
             0x307: GL_ONE_MINUS_DST_COLOR
 }
 
-Logger.debug('GL_ONE : %s' % GL_ONE)
-
 
 def random_color():
     return Color(random.random(), random.random(), random.random())
@@ -38,56 +39,36 @@ class Particle(object):
     x, y, rotation, current_time = 0, 0, 0, 0
     scale, total_time = 1.0, 1.0
     color = [1.0, 1.0, 1.0, 1.0]
+    color_argb, color_argb_delta = [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]
+    start_x, start_y, velocity_x, velocity_y = 0, 0, 0, 0
+    radial_acceleration, tangent_acceleration = 0, 0
+    emit_radius, emit_radius_delta = 0, 0
+    emit_rotation, emit_rotation_delta = 0, 0
+    rotation_delta, scale_delta = 0, 0
 
 
 class ParticleSystem(Widget):
-    def __init__(self, texture, emission_rate, initial_capacity=128, max_capacity=8192, blend_factor_source=None, blend_factor_dest=None, **kwargs):
+    def __init__(self, config, **kwargs):
         super(ParticleSystem, self).__init__(**kwargs)
-        self.texture = texture
-        self.emission_rate = emission_rate
-        self.initial_capacity = initial_capacity
-        self.max_capacity = min(max_capacity, 8192)
-        self.blend_factor_source = blend_factor_source
-        self.blend_factor_dest = blend_factor_dest
-
         self.capacity = 0
         self.particles = list()
         self.particles_dict = dict()
         self.emission_time = 0.0
         self.frame_time = 0.0
-        self.emitter_x = self.emitter_y = 0.0
         self.num_particles = 0
 
+        self._parse_config(config)
+        self.emission_rate = self.max_num_particles / self.life_span
+        self.initial_capacity = self.max_num_particles
+        self.max_capacity = self.max_num_particles
         self._raise_capacity(self.initial_capacity)
 
+        with self.canvas.before:
+            Callback(self._set_blend_func)
+        with self.canvas.after:
+            Callback(self._reset_blend_func)
+
         Clock.schedule_interval(self._update, 1.0 / 60.0)
-
-    def _update(self, dt):
-        self.advance_time(dt)
-        self.render()
-
-    def _create_particle(self):
-        return Particle()
-
-    def _init_particle(self, particle):
-        particle.x = self.emitter_x
-        particle.y = self.emitter_y
-        particle.current_time = 0.0
-        particle.total_time = 1.0
-        particle.color = random_color()
-
-    def _advance_particle(self, particle, passed_time):
-        particle.y = passed_time * 250
-        particle.alpha = 1.0 - particle.current_time / particle.total_time
-        particle.scale = 1.0 - particle.alpha
-        particle.current_time += passed_time
-
-    def _raise_capacity(self, by_amount):
-        old_capacity = self.capacity
-        new_capacity = min(self.max_capacity, self.capacity + by_amount)
-
-        for i in range(new_capacity - old_capacity):
-            self.particles.append(self._create_particle())
 
     def start(self, duration=sys.maxint):
         if self.emission_rate != 0:
@@ -100,93 +81,18 @@ class ParticleSystem(Widget):
             self.particles_dict = dict()
             self.canvas.clear()
 
-    def advance_time(self, passed_time):
-        particle_index = 0
-
-        # advance existing particles
-        while particle_index < self.num_particles:
-            particle = self.particles[particle_index]
-            if particle.current_time < particle.total_time:
-                self._advance_particle(particle, passed_time)
-                particle_index += 1
-            else:
-                if particle_index != self.num_particles - 1:
-                    next_particle = self.particles[self.num_particles - 1]
-                    self.particles[self.num_particles - 1] = particle
-                    self.particles[particle_index] = next_particle
-
-                self.num_particles -= 1
-                if self.num_particles == 0:
-                    print 'COMPLETE'
-                    #self.dispatch('COMPLETE')
-
-        # create and advance new particles
-        if self.emission_time > 0:
-            time_between_particles = 1.0 / self.emission_rate
-            self.frame_time += passed_time
-
-            while self.frame_time > 0:
-                if self.num_particles < self.max_capacity:
-                    if self.num_particles == self.capacity:
-                        self._raise_capacity(self.capacity)
-
-                    particle = self.particles[self.num_particles]
-                    self.num_particles += 1
-                    self._init_particle(particle)
-                    self._advance_particle(particle, self.frame_time)
-
-                self.frame_time -= time_between_particles
-
-            if self.emission_time != sys.maxint:
-                self.emission_time = max(0.0, self.emission_time - passed_time)
-
-    def render(self):
-        if self.num_particles == 0:
-            return
-        for i in range(self.num_particles):
-            particle = self.particles[i]
-            size = (self.texture.size[0] * particle.scale, self.texture.size[1] * particle.scale)
-            if particle not in self.particles_dict:
-                self.particles_dict[particle] = dict()
-                with self.canvas:
-                    self.particles_dict[particle]['color'] = Color(particle.color[0], particle.color[1], particle.color[2], particle.color[3])
-                    self.particles_dict[particle]['rect'] = Rectangle(texture=self.texture, pos=(particle.x - size[0] * 0.5, particle.y - size[1] * 0.5), size=size)
-            else:
-                self.particles_dict[particle]['color'].rgba = particle.color
-                self.particles_dict[particle]['rect'].pos = (particle.x - size[0] * 0.5, particle.y - size[1] * 0.5)
-                self.particles_dict[particle]['rect'].size = size
-
-
-class PDParticle(Particle):
-    color_argb, color_argb_delta = [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]
-    start_x, start_y, velocity_x, velocity_y = 0, 0, 0, 0
-    radial_acceleration, tangent_acceleration = 0, 0
-    emit_radius, emit_radius_delta = 0, 0
-    emit_rotation, emit_rotation_delta = 0, 0
-    rotation_delta, scale_delta = 0, 0
-
-
-class PDParticleSystem(ParticleSystem):
-    def __init__(self, config, texture):
-        self._parse_config(config)
-        emission_rate = self.max_num_particles / self.life_span
-        super(PDParticleSystem, self).__init__(texture, emission_rate, self.max_num_particles, self.max_num_particles, self.blend_factor_source, self.blend_factor_dest)
-        self.premultiplied_alpha = False
-
-        with self.canvas.before:
-            Callback(self._set_blend_func)
-        with self.canvas.after:
-            Callback(self._reset_blend_func)
-
     def _set_blend_func(self, instruction):
-        glBlendFunc(self.blend_factor_source, self.blend_factor_dest)
-        #xglBlendFunc(GL_SRC_ALPHA, GL_ONE)
+        #glBlendFunc(self.blend_factor_source, self.blend_factor_dest)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE)
 
     def _reset_blend_func(self, instruction):
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
     def _parse_config(self, config):
-        self._config = config
+        self._config = parse_xml(config)
+        path = os.path.dirname(os.path.abspath(config))
+        texture_path = os.path.join(path, self._parse_data('texture', 'name'))
+        self.texture = Image(texture_path).texture
         self.emitter_x = float(self._parse_data('sourcePosition', 'x'))
         self.emitter_y = float(self._parse_data('sourcePosition', 'y'))
         self.emitter_x_variance = float(self._parse_data('sourcePositionVariance', 'x'))
@@ -235,8 +141,12 @@ class PDParticleSystem(ParticleSystem):
         value = int(self._parse_data(name))
         return BLEND_FUNC[value]
 
+    def _update(self, dt):
+        self._advance_time(dt)
+        self._render()
+
     def _create_particle(self):
-        return PDParticle()
+        return Particle()
 
     def _init_particle(self, particle):
         life_span = self.life_span + self.life_span_variance * (random.random() * 2.0 - 1.0)
@@ -337,3 +247,65 @@ class PDParticleSystem(ParticleSystem):
             particle.color_argb[i] += particle.color_argb_delta[i] * passed_time
 
         particle.color = particle.color_argb
+
+    def _raise_capacity(self, by_amount):
+        old_capacity = self.capacity
+        new_capacity = min(self.max_capacity, self.capacity + by_amount)
+
+        for i in range(new_capacity - old_capacity):
+            self.particles.append(self._create_particle())
+        Logger.debug("RAISE %s" % (new_capacity - old_capacity))
+
+    def _advance_time(self, passed_time):
+        particle_index = 0
+
+        # advance existing particles
+        while particle_index < self.num_particles:
+            particle = self.particles[particle_index]
+            if particle.current_time < particle.total_time:
+                self._advance_particle(particle, passed_time)
+                particle_index += 1
+            else:
+                if particle_index != self.num_particles - 1:
+                    next_particle = self.particles[self.num_particles - 1]
+                    self.particles[self.num_particles - 1] = particle
+                    self.particles[particle_index] = next_particle
+                self.num_particles -= 1
+                if self.num_particles == 0:
+                    print 'COMPLETE'
+
+        # create and advance new particles
+        if self.emission_time > 0:
+            time_between_particles = 1.0 / self.emission_rate
+            self.frame_time += passed_time
+
+            while self.frame_time > 0:
+                if self.num_particles < self.max_capacity:
+                    if self.num_particles == self.capacity:
+                        self._raise_capacity(self.capacity)
+
+                    particle = self.particles[self.num_particles]
+                    self.num_particles += 1
+                    self._init_particle(particle)
+                    self._advance_particle(particle, self.frame_time)
+
+                self.frame_time -= time_between_particles
+
+            if self.emission_time != sys.maxint:
+                self.emission_time = max(0.0, self.emission_time - passed_time)
+
+    def _render(self):
+        if self.num_particles == 0:
+            return
+        for i in range(self.num_particles):
+            particle = self.particles[i]
+            size = (self.texture.size[0] * particle.scale, self.texture.size[1] * particle.scale)
+            if particle not in self.particles_dict:
+                self.particles_dict[particle] = dict()
+                with self.canvas:
+                    self.particles_dict[particle]['color'] = Color(particle.color[0], particle.color[1], particle.color[2], particle.color[3])
+                    self.particles_dict[particle]['rect'] = Rectangle(texture=self.texture, pos=(particle.x - size[0] * 0.5, particle.y - size[1] * 0.5), size=size)
+            else:
+                self.particles_dict[particle]['color'].rgba = particle.color
+                self.particles_dict[particle]['rect'].pos = (particle.x - size[0] * 0.5, particle.y - size[1] * 0.5)
+                self.particles_dict[particle]['rect'].size = size
