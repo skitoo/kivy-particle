@@ -6,7 +6,7 @@ from kivy.uix.widget import Widget
 from kivy.clock import Clock
 from kivy.graphics import Rectangle, Color, Callback
 from kivy.graphics.opengl import glBlendFunc, GL_SRC_ALPHA, GL_ONE, GL_ZERO, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_ONE_MINUS_SRC_ALPHA, GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR
-
+from kivy.logger import Logger
 import random
 import sys
 import math
@@ -26,6 +26,8 @@ BLEND_FUNC = {0: GL_ZERO,
             0x306: GL_DST_COLOR,
             0x307: GL_ONE_MINUS_DST_COLOR
 }
+
+Logger.debug('GL_ONE : %s' % GL_ONE)
 
 
 def random_color():
@@ -57,10 +59,6 @@ class ParticleSystem(Widget):
         self.num_particles = 0
 
         self._raise_capacity(self.initial_capacity)
-
-        #self.canvas = RenderContext()
-        #with self.canvas:
-        #    self.fbo = Fbo(size=self.size)
 
         Clock.schedule_interval(self._update, 1.0 / 60.0)
 
@@ -147,14 +145,16 @@ class ParticleSystem(Widget):
             return
         for i in range(self.num_particles):
             particle = self.particles[i]
+            size = (self.texture.size[0] * particle.scale, self.texture.size[1] * particle.scale)
             if particle not in self.particles_dict:
                 self.particles_dict[particle] = dict()
                 with self.canvas:
                     self.particles_dict[particle]['color'] = Color(particle.color[0], particle.color[1], particle.color[2], particle.color[3])
-                    self.particles_dict[particle]['rect'] = Rectangle(texture=self.texture, pos=(particle.x, particle.y), size=(self.texture.size[0] * particle.scale, self.texture.size[1] * particle.scale))
+                    self.particles_dict[particle]['rect'] = Rectangle(texture=self.texture, pos=(particle.x - size[0] * 0.5, particle.y - size[1] * 0.5), size=size)
             else:
-                self.particles_dict[particle]['rect'].pos = (particle.x, particle.y)
-                self.particles_dict[particle]['rect'].size = (self.texture.size[0] * particle.scale, self.texture.size[1] * particle.scale)
+                self.particles_dict[particle]['color'].rgba = particle.color
+                self.particles_dict[particle]['rect'].pos = (particle.x - size[0] * 0.5, particle.y - size[1] * 0.5)
+                self.particles_dict[particle]['rect'].size = size
 
 
 class PDParticle(Particle):
@@ -180,12 +180,15 @@ class PDParticleSystem(ParticleSystem):
 
     def _set_blend_func(self, instruction):
         glBlendFunc(self.blend_factor_source, self.blend_factor_dest)
+        #xglBlendFunc(GL_SRC_ALPHA, GL_ONE)
 
     def _reset_blend_func(self, instruction):
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
     def _parse_config(self, config):
         self._config = config
+        self.emitter_x = float(self._parse_data('sourcePosition', 'x'))
+        self.emitter_y = float(self._parse_data('sourcePosition', 'y'))
         self.emitter_x_variance = float(self._parse_data('sourcePositionVariance', 'x'))
         self.emitter_y_variance = float(self._parse_data('sourcePositionVariance', 'y'))
         self.gravity_x = float(self._parse_data('gravity', 'x'))
@@ -265,16 +268,13 @@ class PDParticleSystem(ParticleSystem):
         start_size = self.start_size + self.start_size_variance * (random.random() * 2.0 - 1.0)
         end_size = self.end_size + self.end_size_variance * (random.random() * 2.0 - 1.0)
 
-        if start_size < 0.1:
-            start_size = 0.1
-        if end_size < 0.1:
-            end_size = 0.1
+        start_size = max(0.1, start_size)
+        end_size = max(0.1, end_size)
 
         particle.scale = start_size / self.texture.width
         particle.scale_delta = ((end_size - start_size) / life_span) / self.texture.width
 
         # colors
-
         particle.color_argb = self.start_color[:]
         for i in range(4):
             if self.start_color_variance[i] != 0:
@@ -293,9 +293,7 @@ class PDParticleSystem(ParticleSystem):
         particle.rotation_delta = (end_rotation - start_rotation) / life_span
 
     def _advance_particle(self, particle, passed_time):
-        rest_time = particle.total_time - particle.current_time
-        if rest_time <= passed_time:
-            passed_time = rest_time
+        passed_time = min(passed_time, particle.total_time - particle.current_time)
         particle.current_time += passed_time
 
         if self.emitter_type == EMITTER_TYPE_RADIAL:

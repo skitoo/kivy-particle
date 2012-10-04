@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <particleEmitterConfig>
-  <texture name="drugs_particle.png"/>
+  <texture name="particle.png"/>
   <sourcePosition x="160.00" y="211.72"/>
   <sourcePositionVariance x="30.00" y="30.00"/>
   <speed value="98.00"/>
@@ -18,7 +18,7 @@
   <startColorVariance red="0.42" green="0.75" blue="0.88" alpha="0.08"/>
   <finishColor red="0.79" green="0.85" blue="0.42" alpha="0.57"/>
   <finishColorVariance red="0.45" green="0.51" blue="0.26" alpha="0.46"/>
-  <maxParticles value="200"/>
+  <maxParticles value="600"/>
   <startParticleSize value="50.00"/>
   <startParticleSizeVariance value="50.00"/>
   <finishParticleSize value="30.00"/>
@@ -30,7 +30,7 @@
   <minRadius value="0.00"/>
   <rotatePerSecond value="0.00"/>
   <rotatePerSecondVariance value="0.00"/>
-  <blendFuncSource value="770"/>
+  <blendFuncSource value="1"/>
   <blendFuncDestination value="1"/>
   <rotationStart value="0.00"/>
   <rotationStartVariance value="0.00"/>
