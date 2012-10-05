@@ -31,14 +31,27 @@ BLEND_FUNC = {0: GL_ZERO,
 }
 
 
+def clamp(value):
+    return min(max(0.0, value), 1.0)
+
+
 def random_color():
     return Color(random.random(), random.random(), random.random())
+
+
+def random_variance(base, variance):
+    return base + variance * (random.random() * 2.0 - 1.0)
+
+
+def random_color_variance(base, variance):
+    return [clamp(random_variance(base[i], variance[i])) for i in range(4)]
 
 
 class Particle(object):
     x, y, rotation, current_time = 0, 0, 0, 0
     scale, total_time = 1.0, 1.0
     color = [1.0, 1.0, 1.0, 1.0]
+    color_delta = [0.0, 0.0, 0.0, 0.0]
     color_argb, color_argb_delta = [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]
     start_x, start_y, velocity_x, velocity_y = 0, 0, 0, 0
     radial_acceleration, tangent_acceleration = 0, 0
@@ -83,6 +96,7 @@ class ParticleSystem(Widget):
 
     def _set_blend_func(self, instruction):
         #glBlendFunc(self.blend_factor_source, self.blend_factor_dest)
+        #glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE)
 
     def _reset_blend_func(self, instruction):
@@ -149,34 +163,34 @@ class ParticleSystem(Widget):
         return Particle()
 
     def _init_particle(self, particle):
-        life_span = self.life_span + self.life_span_variance * (random.random() * 2.0 - 1.0)
-        if life_span <= 0:
+        life_span = random_variance(self.life_span, self.life_span_variance)
+        if life_span <= 0.0:
             return
 
         particle.current_time = 0.0
         particle.total_time = life_span
 
-        particle.x = self.emitter_x + self.emitter_x_variance * (random.random() * 2.0 - 1.0)
-        particle.y = self.emitter_y + self.emitter_y_variance * (random.random() * 2.0 - 1.0)
+        particle.x = random_variance(self.emitter_x, self.emitter_x_variance)
+        particle.y = random_variance(self.emitter_y, self.emitter_y_variance)
         particle.start_x = self.emitter_x
         particle.start_y = self.emitter_y
 
-        angle = self.emit_angle + self.emit_angle_variance * (random.random() * 2.0 - 1.0)
-        speed = self.speed + self.speed_variance * (random.random() * 2.0 - 1.0)
+        angle = random_variance(self.emit_angle, self.emit_angle_variance)
+        speed = random_variance(self.speed, self.speed_variance)
         particle.velocity_x = speed * math.cos(angle)
         particle.velocity_y = speed * math.sin(angle)
 
-        particle.emit_radius = self.max_radius + self.max_radius_variance * (random.random() * 2.0 - 1.0)
+        particle.emit_radius = random_variance(self.max_radius, self.max_radius_variance)
         particle.emit_radius_delta = self.max_radius / life_span
 
-        particle.emit_rotation = self.emit_angle + self.emit_angle_variance * (random.random() * 2.0 - 1.0)
-        particle.emit_rotation_delta = self.rotate_per_second + self.rotate_per_second_variance * (random.random() * 2.0 - 1.0)
+        particle.emit_rotation = random_variance(self.emit_angle, self.emit_angle_variance)
+        particle.emit_rotation_delta = random_variance(self.rotate_per_second, self.rotate_per_second_variance)
 
-        particle.radial_acceleration = self.radial_acceleration + self.radial_acceleration_variance * (random.random() * 2.0 - 1.0)
-        particle.tangent_acceleration = self.tangential_acceleration + self.tangential_acceleration_variance * (random.random() * 2.0 - 1.0)
+        particle.radial_acceleration = random_variance(self.radial_acceleration, self.radial_acceleration_variance)
+        particle.tangent_acceleration = random_variance(self.tangential_acceleration, self.tangential_acceleration_variance)
 
-        start_size = self.start_size + self.start_size_variance * (random.random() * 2.0 - 1.0)
-        end_size = self.end_size + self.end_size_variance * (random.random() * 2.0 - 1.0)
+        start_size = random_variance(self.start_size, self.start_size_variance)
+        end_size = random_variance(self.end_size, self.end_size_variance)
 
         start_size = max(0.1, start_size)
         end_size = max(0.1, end_size)
@@ -185,20 +199,15 @@ class ParticleSystem(Widget):
         particle.scale_delta = ((end_size - start_size) / life_span) / self.texture.width
 
         # colors
-        particle.color_argb = self.start_color[:]
-        for i in range(4):
-            if self.start_color_variance[i] != 0:
-                particle.color_argb[i] += self.start_color_variance[i] * (random.random() * 2.0 - 1.0)
+        start_color = random_color_variance(self.start_color, self.start_color_variance)
+        end_color = random_color_variance(self.end_color, self.end_color_variance)
 
-        end_color = self.end_color[:]
-        for i in range(4):
-            if self.end_color_variance[i] != 0:
-                end_color[i] += self.end_color_variance[i] * (random.random() * 2.0 - 1.0)
-            particle.color_argb_delta[i] = (end_color[i] - self.start_color[i]) / life_span
+        particle.color_delta = [(end_color[i] - start_color[i]) / life_span for i in range(4)]
+        particle.color = start_color
 
         # rotation
-        start_rotation = self.start_rotation + self.start_rotation_variance * (random.random() * 2.0 - 1.0)
-        end_rotation = self.end_rotation + self.end_rotation_variance * (random.random() * 2.0 - 1.0)
+        start_rotation = random_variance(self.start_rotation, self.start_rotation_variance)
+        end_rotation = random_variance(self.end_rotation, self.end_rotation_variance)
         particle.rotation = start_rotation
         particle.rotation_delta = (end_rotation - start_rotation) / life_span
 
@@ -243,10 +252,7 @@ class ParticleSystem(Widget):
         particle.scale += particle.scale_delta * passed_time
         particle.rotation += particle.rotation_delta * passed_time
 
-        for i in range(4):
-            particle.color_argb[i] += particle.color_argb_delta[i] * passed_time
-
-        particle.color = particle.color_argb
+        particle.color = [particle.color[i] + particle.color_delta[i] * passed_time for i in range(4)]
 
     def _raise_capacity(self, by_amount):
         old_capacity = self.capacity
@@ -254,7 +260,6 @@ class ParticleSystem(Widget):
 
         for i in range(new_capacity - old_capacity):
             self.particles.append(self._create_particle())
-        Logger.debug("RAISE %s" % (new_capacity - old_capacity))
 
     def _advance_time(self, passed_time):
         particle_index = 0
@@ -306,6 +311,7 @@ class ParticleSystem(Widget):
                     self.particles_dict[particle]['color'] = Color(particle.color[0], particle.color[1], particle.color[2], particle.color[3])
                     self.particles_dict[particle]['rect'] = Rectangle(texture=self.texture, pos=(particle.x - size[0] * 0.5, particle.y - size[1] * 0.5), size=size)
             else:
-                self.particles_dict[particle]['color'].rgba = particle.color
+                #print self.particles_dict[particle]['color'].a
+                #self.particles_dict[particle]['color'].rgba = particle.color
                 self.particles_dict[particle]['rect'].pos = (particle.x - size[0] * 0.5, particle.y - size[1] * 0.5)
                 self.particles_dict[particle]['rect'].size = size
