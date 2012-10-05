@@ -307,11 +307,11 @@ class ParticleSystem(Widget):
             size = (self.texture.size[0] * particle.scale, self.texture.size[1] * particle.scale)
             if particle not in self.particles_dict:
                 self.particles_dict[particle] = dict()
+                color = particle.color[:]
                 with self.canvas:
-                    self.particles_dict[particle]['color'] = Color(particle.color[0], particle.color[1], particle.color[2], particle.color[3])
+                    self.particles_dict[particle]['color'] = Color(color[0], color[1], color[2], color[3])
                     self.particles_dict[particle]['rect'] = Rectangle(texture=self.texture, pos=(particle.x - size[0] * 0.5, particle.y - size[1] * 0.5), size=size)
             else:
-                #print self.particles_dict[particle]['color'].a
-                #self.particles_dict[particle]['color'].rgba = particle.color
+                self.particles_dict[particle]['color'].rgba = particle.color
                 self.particles_dict[particle]['rect'].pos = (particle.x - size[0] * 0.5, particle.y - size[1] * 0.5)
                 self.particles_dict[particle]['rect'].size = size
