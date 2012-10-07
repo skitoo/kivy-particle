@@ -6,7 +6,8 @@ from kivy.graphics import Rectangle, Color, Callback
 from kivy.graphics.opengl import glBlendFunc, GL_SRC_ALPHA, GL_ONE, GL_ZERO, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_ONE_MINUS_SRC_ALPHA, GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR
 from kivy.core.image import Image
 from xml.dom.minidom import parse as parse_xml
-import random
+from .utils import random_variance, random_color_variance
+
 import sys
 import math
 import os
@@ -26,18 +27,6 @@ BLEND_FUNC = {0: GL_ZERO,
             0x306: GL_DST_COLOR,
             0x307: GL_ONE_MINUS_DST_COLOR
 }
-
-
-def random_color():
-    return Color(random.random(), random.random(), random.random())
-
-
-def random_variance(base, variance):
-    return base + variance * (random.random() * 2.0 - 1.0)
-
-
-def random_color_variance(base, variance):
-    return [min(max(0.0, (random_variance(base[i], variance[i]))), 1.0) for i in range(4)]
 
 
 class Particle(object):
