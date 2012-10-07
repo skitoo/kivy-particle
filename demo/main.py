@@ -1,20 +1,19 @@
-import kivy
 import sys
-
-sys.path.append('../src')
+sys.path.append('..')
 
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.button import Button
 from kivy.uix.widget import Widget
-from kivy_particle import ParticleSystem
 from kivy.config import Config
 
+from kivyparticle import ParticleSystem
 
-class PaintWidget(Widget):
+
+class DemoParticle(Widget):
     def __init__(self, **kwargs):
-        super(PaintWidget, self).__init__(**kwargs)
+        super(DemoParticle, self).__init__(**kwargs)
         self.sun = ParticleSystem('media/sun.pex')
         self.drugs = ParticleSystem('media/drugs.pex')
         self.jellyfish = ParticleSystem('media/jellyfish.pex')
@@ -55,10 +54,10 @@ class PaintWidget(Widget):
         self.current.start()
 
 
-class MyPainApp(App):
+class DemoParticleApp(App):
     def build(self):
         root = GridLayout(cols=2)
-        paint = PaintWidget(size_hint_x=None, width=600)
+        paint = DemoParticle(size_hint_x=None, width=600)
         root.add_widget(paint)
         buttons = BoxLayout(orientation='vertical')
         root.add_widget(buttons)
@@ -83,6 +82,5 @@ class MyPainApp(App):
 
 
 if __name__ == '__main__':
-    kivy.require('1.4.0')
     Config.set('modules', 'monitor', '')
-    MyPainApp().run()
+    DemoParticleApp().run()

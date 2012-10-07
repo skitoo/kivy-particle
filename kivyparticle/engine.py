@@ -1,13 +1,10 @@
-
-import kivy
-kivy.require('1.4.0')
+# -*- coding: utf-8 -*-
 
 from kivy.uix.widget import Widget
 from kivy.clock import Clock
 from kivy.graphics import Rectangle, Color, Callback
 from kivy.graphics.opengl import glBlendFunc, GL_SRC_ALPHA, GL_ONE, GL_ZERO, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_ONE_MINUS_SRC_ALPHA, GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR
 from kivy.core.image import Image
-from kivy.logger import Logger
 from xml.dom.minidom import parse as parse_xml
 import random
 import sys
@@ -31,10 +28,6 @@ BLEND_FUNC = {0: GL_ZERO,
 }
 
 
-def clamp(value):
-    return min(max(0.0, value), 1.0)
-
-
 def random_color():
     return Color(random.random(), random.random(), random.random())
 
@@ -44,7 +37,7 @@ def random_variance(base, variance):
 
 
 def random_color_variance(base, variance):
-    return [clamp(random_variance(base[i], variance[i])) for i in range(4)]
+    return [min(max(0.0, (random_variance(base[i], variance[i]))), 1.0) for i in range(4)]
 
 
 class Particle(object):
@@ -52,7 +45,6 @@ class Particle(object):
     scale, total_time = 1.0, 1.0
     color = [1.0, 1.0, 1.0, 1.0]
     color_delta = [0.0, 0.0, 0.0, 0.0]
-    color_argb, color_argb_delta = [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]
     start_x, start_y, velocity_x, velocity_y = 0, 0, 0, 0
     radial_acceleration, tangent_acceleration = 0, 0
     emit_radius, emit_radius_delta = 0, 0
