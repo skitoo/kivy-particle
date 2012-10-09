@@ -12,6 +12,8 @@ import sys
 import math
 import os
 
+__all__ = ['EMITTER_TYPE_GRAVITY', 'EMITTER_TYPE_RADIAL', 'Particle', 'ParticleSystem']
+
 
 EMITTER_TYPE_GRAVITY = 0
 EMITTER_TYPE_RADIAL = 1

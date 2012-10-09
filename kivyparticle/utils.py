@@ -2,6 +2,8 @@
 
 import random
 
+__all__ = ['random_variance', 'random_color_variance']
+
 
 def random_variance(base, variance):
     return base + variance * (random.random() * 2.0 - 1.0)
