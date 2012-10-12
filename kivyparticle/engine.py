@@ -7,6 +7,7 @@ from kivy.graphics.opengl import glBlendFunc, GL_SRC_ALPHA, GL_ONE, GL_ZERO, GL_
 from kivy.core.image import Image
 from xml.dom.minidom import parse as parse_xml
 from .utils import random_variance, random_color_variance
+from kivy.properties import NumericProperty, BooleanProperty, ListProperty, StringProperty, ObjectProperty, BoundedNumericProperty
 
 import sys
 import math
@@ -44,6 +45,43 @@ class Particle(object):
 
 
 class ParticleSystem(Widget):
+    max_num_particles = NumericProperty(200)
+    life_span = NumericProperty(2)
+    texture = ObjectProperty(None)
+    life_span_variance = NumericProperty(0)
+    start_size = NumericProperty(16)
+    start_size_variance = NumericProperty(0)
+    end_size = NumericProperty(16)
+    end_size_variance = NumericProperty(0)
+    emit_angle = NumericProperty(0)
+    emit_angle_variance = NumericProperty(0)
+    start_rotation = NumericProperty(0)
+    start_rotation_variance = NumericProperty(0)
+    end_rotation = NumericProperty(0)
+    end_rotation_variance = NumericProperty(0)
+    emitter_x_variance = NumericProperty(100)
+    emitter_y_variance = NumericProperty(100)
+    gravity_x = NumericProperty(0)
+    gravity_y = NumericProperty(0)
+    speed = NumericProperty(0)
+    speed_variance = NumericProperty(0)
+    radial_acceleration = NumericProperty(100)
+    radial_acceleration_variance = NumericProperty(0)
+    tangential_acceleration = NumericProperty(0)
+    tangential_acceleration_variance = NumericProperty(0)
+    max_radius = NumericProperty(100)
+    max_radius_variance = NumericProperty(0)
+    min_radius = NumericProperty(50)
+    rotate_per_second = NumericProperty(0)
+    rotate_per_second_variance = NumericProperty(0)
+    start_color = ListProperty([1.,1.,1.,1.])
+    start_color_variance = ListProperty([1.,1.,1.,1.])
+    end_color = ListProperty([1.,1.,1.,1.])
+    end_color_variance = ListProperty([1.,1.,1.,1.])
+    blend_factor_source = NumericProperty(770)
+    blend_factor_dest = NumericProperty(1)
+    emitter_type = NumericProperty(0)
+
     def __init__(self, config, **kwargs):
         super(ParticleSystem, self).__init__(**kwargs)
         self.capacity = 0
@@ -53,7 +91,7 @@ class ParticleSystem(Widget):
         self.frame_time = 0.0
         self.num_particles = 0
 
-        self._parse_config(config)
+        if config is not None: self._parse_config(config)
         self.emission_rate = self.max_num_particles / self.life_span
         self.initial_capacity = self.max_num_particles
         self.max_capacity = self.max_num_particles
@@ -76,6 +114,22 @@ class ParticleSystem(Widget):
             self.num_particles = 0
             self.particles_dict = dict()
             self.canvas.clear()
+
+    def on_max_num_particles(self, instance, value):
+        self.max_capacity = value
+        if self.capacity < value:
+            self._raise_capacity(self.max_capacity - self.capacity)
+        elif self.capacity > value:
+            self._lower_capacity(self.capacity - self.max_capacity)
+        self.emission_rate = self.max_num_particles/self.life_span
+
+    def on_texture(self,instance,value):
+        for p in self.particles:
+            try:
+                self.particles_dict[p]['rect'].texture = self.texture
+            except KeyError:
+                # if particle isn't initialized yet, you can't change its texture.
+                pass
 
     def _set_blend_func(self, instruction):
         #glBlendFunc(self.blend_factor_source, self.blend_factor_dest)
@@ -240,8 +294,8 @@ class ParticleSystem(Widget):
     def _raise_capacity(self, by_amount):
         old_capacity = self.capacity
         new_capacity = min(self.max_capacity, self.capacity + by_amount)
-
-        for i in range(new_capacity - old_capacity):
+        
+        for i in range(int(new_capacity - old_capacity)):
             self.particles.append(self._create_particle())
 
     def _advance_time(self, passed_time):
