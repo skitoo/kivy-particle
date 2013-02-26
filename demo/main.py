@@ -3,12 +3,14 @@
 import sys
 sys.path.append('..')
 
+import kivy
+kivy.require('1.5.1')
+
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.button import Button
 from kivy.uix.widget import Widget
-from kivy.config import Config
 
 from kivyparticle import ParticleSystem
 
@@ -84,5 +86,4 @@ class DemoParticleApp(App):
 
 
 if __name__ == '__main__':
-    Config.set('modules', 'monitor', '')
     DemoParticleApp().run()

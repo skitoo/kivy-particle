@@ -5,6 +5,7 @@ from kivy.clock import Clock
 from kivy.graphics import Color, Callback, Rotate, PushMatrix, PopMatrix, Translate, Quad
 from kivy.graphics.opengl import glBlendFunc, GL_SRC_ALPHA, GL_ONE, GL_ZERO, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_ONE_MINUS_SRC_ALPHA, GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR
 from kivy.core.image import Image
+from kivy.logger import Logger
 from xml.dom.minidom import parse as parse_xml
 from .utils import random_variance, random_color_variance
 from kivy.properties import NumericProperty, BooleanProperty, ListProperty, StringProperty, ObjectProperty
@@ -354,7 +355,7 @@ class ParticleSystem(Widget):
                     self.particles[particle_index] = next_particle
                 self.num_particles -= 1
                 if self.num_particles == 0:
-                    print 'COMPLETE'
+                    Logger.debug('Particle: COMPLETE')
 
         # create and advance new particles
         if self.emission_time > 0:
