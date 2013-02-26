@@ -10,6 +10,7 @@ from .utils import random_variance, random_color_variance
 from kivy.properties import NumericProperty, BooleanProperty, ListProperty, StringProperty, ObjectProperty
 
 import sys
+import os
 import math
 
 __all__ = ['EMITTER_TYPE_GRAVITY', 'EMITTER_TYPE_RADIAL', 'Particle', 'ParticleSystem']
@@ -148,10 +149,18 @@ class ParticleSystem(Widget):
 
     def _parse_config(self, config):
         self._config = parse_xml(config)
-        self.texture_path = self._parse_data('texture', 'name')
+
+        texture_path = self._parse_data('texture', 'name')
+        config_dir_path = os.path.dirname(os.path.abspath(config))
+        path = os.path.join(config_dir_path, texture_path)
+        if os.path.exists(path):
+            self.texture_path = path
+        else:
+            self.texture_path = texture_path
+
         self.texture = Image(self.texture_path).texture
-        # self.emitter_x = float(self._parse_data('sourcePosition', 'x'))
-        # self.emitter_y = float(self._parse_data('sourcePosition', 'y'))
+        self.emitter_x = float(self._parse_data('sourcePosition', 'x'))
+        self.emitter_y = float(self._parse_data('sourcePosition', 'y'))
         self.emitter_x_variance = float(self._parse_data('sourcePositionVariance', 'x'))
         self.emitter_y_variance = float(self._parse_data('sourcePositionVariance', 'y'))
         self.gravity_x = float(self._parse_data('gravity', 'x'))
