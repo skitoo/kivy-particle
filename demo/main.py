@@ -1,7 +1,18 @@
 # -*- coding: utf-8 -*-
 
 import sys
-sys.path.append('..')
+from os.path import abspath, dirname, join
+
+DIR_APP = join(
+    dirname(__file__), 
+    '..'
+)
+
+sys.path.insert(
+    0, 
+    abspath(DIR_APP)
+)
+
 
 import kivy
 kivy.require('1.5.1')
@@ -18,10 +29,10 @@ from kivyparticle import ParticleSystem
 class DemoParticle(Widget):
     def __init__(self, **kwargs):
         super(DemoParticle, self).__init__(**kwargs)
-        self.sun = ParticleSystem('media/sun.pex')
-        self.drugs = ParticleSystem('media/drugs.pex')
-        self.jellyfish = ParticleSystem('media/jellyfish.pex')
-        self.fire = ParticleSystem('media/fire.pex')
+        self.sun = ParticleSystem(abspath(join(DIR_APP,'demo/media/sun.pex')))
+        self.drugs = ParticleSystem(abspath(join(DIR_APP,'demo/media/drugs.pex')))
+        self.jellyfish = ParticleSystem(abspath(join(DIR_APP,'demo/media/jellyfish.pex')))
+        self.fire = ParticleSystem(abspath(join(DIR_APP,'demo/media/fire.pex')))
 
         self.current = None
         self._show(self.sun)
