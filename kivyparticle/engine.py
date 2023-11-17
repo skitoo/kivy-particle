@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+# 2022-02-25 - Python 3 remove maxint - replaced by maxsize - https://stackoverflow.com/a/13795777
+
 from kivy.uix.widget import Widget
 from kivy.clock import Clock
 from kivy.graphics import Color, Callback, Rotate, PushMatrix, PopMatrix, Translate, Quad
@@ -110,7 +112,7 @@ class ParticleSystem(Widget):
 
         Clock.schedule_once(self._update, self.update_interval)
 
-    def start(self, duration=sys.maxint):
+    def start(self, duration=sys.maxsize):
         if self.emission_rate != 0:
             self.emission_time = duration
 
@@ -374,7 +376,7 @@ class ParticleSystem(Widget):
 
                 self.frame_time -= time_between_particles
 
-            if self.emission_time != sys.maxint:
+            if self.emission_time != sys.maxsize:
                 self.emission_time = max(0.0, self.emission_time - passed_time)
 
     def _render(self):
